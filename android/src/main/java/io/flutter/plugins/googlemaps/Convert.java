@@ -94,11 +94,20 @@ class Convert {
       return getBitmapFromBytesLegacy(typedBitmap);
     }
     if (bitmap instanceof PlatformBitmapAssetMap typedBitmap) {
-      return getBitmapFromAsset(
-          typedBitmap, assetManager, density, wrapper, new FlutterInjectorWrapper());
+      return FgmIconCache.forAsset(
+          wrapper.iconCache,
+          typedBitmap,
+          density,
+          () ->
+              getBitmapFromAsset(
+                  typedBitmap, assetManager, density, wrapper, new FlutterInjectorWrapper()));
     }
     if (bitmap instanceof PlatformBitmapBytesMap typedBitmap) {
-      return getBitmapFromBytes(typedBitmap, density, wrapper);
+      return FgmIconCache.forBytes(
+          wrapper.iconCache,
+          typedBitmap,
+          density,
+          () -> getBitmapFromBytes(typedBitmap, density, wrapper));
     }
     if (bitmap instanceof PlatformBitmapPinConfig pinConfigBitmap) {
       return getBitmapFromPinConfigBuilder(pinConfigBitmap, assetManager, density, wrapper);
@@ -591,7 +600,9 @@ class Convert {
     sink.setConsumeTapEvents(marker.getConsumeTapEvents());
     sink.setDraggable(marker.getDraggable());
     sink.setFlat(marker.getFlat());
+    final long iconStart = FgmPerf.now();
     sink.setIcon(toBitmapDescriptor(marker.getIcon(), assetManager, density, wrapper));
+    FgmPerf.addIconTime(iconStart);
     interpretInfoWindowOptions(sink, marker.getInfoWindow());
     sink.setPosition(latLngFromPigeon(marker.getPosition()));
     sink.setRotation((float) marker.getRotation());
@@ -948,6 +959,12 @@ class Convert {
   }
 
   static class BitmapDescriptorFactoryWrapper {
+    /**
+     * Fork addition: the icons already made through this wrapper. A map has one wrapper for its
+     * markers, so equal pins share one descriptor for as long as the map lives. Null on a mock.
+     */
+    final FgmIconCache iconCache = new FgmIconCache();
+
     /**
      * Creates a BitmapDescriptor from the provided asset key using the {@link
      * BitmapDescriptorFactory}.

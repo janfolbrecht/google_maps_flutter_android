@@ -909,9 +909,24 @@ class GoogleMapController
       @NonNull List<PlatformMarker> toAdd,
       @NonNull List<PlatformMarker> toChange,
       @NonNull List<String> idsToRemove) {
+    final long beginUptimeMs = android.os.SystemClock.uptimeMillis();
+    FgmPerf.beginBatch();
+    final long begin = FgmPerf.now();
     markersController.addMarkers(toAdd);
+    final long added = FgmPerf.now();
     markersController.changeMarkers(toChange);
+    final long changed = FgmPerf.now();
     markersController.removeMarkers(idsToRemove);
+    FgmPerf.endBatch(
+        toAdd.size(),
+        toChange.size(),
+        idsToRemove.size(),
+        begin,
+        added,
+        changed,
+        FgmPerf.now(),
+        beginUptimeMs,
+        markersController.markerCount());
   }
 
   @Override

@@ -48,6 +48,11 @@ class MarkersController {
     this.markerType = markerType;
   }
 
+  /** Fork addition: how many markers the plugin holds, for the measurement log. */
+  int markerCount() {
+    return markerIdToMarkerBuilder.size();
+  }
+
   void setCollection(MarkerManager.Collection markerCollection) {
     this.markerCollection = markerCollection;
   }
@@ -195,11 +200,13 @@ class MarkersController {
     }
 
     // Remove non-clustered markers from the collection
+    final long sdkStart = FgmPerf.now();
     for (MarkerController markerController : nonClusteredControllers) {
       if (this.markerCollection != null) {
         markerController.removeFromCollection(markerCollection);
       }
     }
+    FgmPerf.addSdkRemoveTime(sdkStart);
 
     // Clean up all marker references
     for (String markerId : markerIdsToRemove) {
@@ -356,7 +363,9 @@ class MarkersController {
 
   private void addMarkerToCollection(String markerId, MarkerBuilder markerBuilder) {
     MarkerOptions options = markerBuilder.build();
+    final long sdkStart = FgmPerf.now();
     final Marker marker = markerCollection.addMarker(options);
+    FgmPerf.addSdkAddTime(sdkStart);
     createControllerForMarker(markerId, marker, markerBuilder.consumeTapEvents());
   }
 
